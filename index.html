@@ -37,7 +37,32 @@
             font-size: 1rem;
             opacity: 0.9;
             max-width: 600px;
+            margin: 0 auto 1.5rem;
+        }
+
+        /* 搜索框 */
+        .search-box {
+            max-width: 500px;
             margin: 0 auto;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1rem 3rem 1rem 1.5rem;
+            border-radius: 50px;
+            border: none;
+            font-size: 1rem;
+            outline: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 1.2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
         }
 
         /* 主容器 */
@@ -47,10 +72,17 @@
             padding: 2rem 1.5rem;
         }
 
+        /* 搜索结果提示 */
+        .search-tip {
+            margin-bottom: 1.5rem;
+            color: #475569;
+            font-size: 0.95rem;
+        }
+
         /* 城市卡片网格 */
         .city-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 2rem;
             margin-bottom: 3rem;
         }
@@ -122,6 +154,14 @@
         .btn-guide:hover {
             background: #d97706;
         }
+
+        /* 无结果提示 */
+        .no-result {
+            text-align: center;
+            padding: 4rem 1rem;
+            color: #64748b;
+        }
+
         /* 详情区域 */
         .detail-section {
             background: white;
@@ -141,16 +181,24 @@
             margin-bottom: 1.2rem;
         }
 
+        .city-banner {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
         .detail-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 1.5rem;
         }
 
         .info-card {
             background: #f8fafc;
             border-radius: 1rem;
-            padding: 1rem;
+            padding: 1.2rem;
         }
 
         .info-card h3 {
@@ -162,22 +210,22 @@
         }
 
         .info-card ul, .info-card p {
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             color: #334155;
             margin-top: 0.5rem;
         }
 
         .info-card li {
             margin-left: 1.2rem;
-            margin-bottom: 0.3rem;
+            margin-bottom: 0.4rem;
         }
 
         .badge-season {
             background: #dcfce7;
             color: #15803d;
-            padding: 0.2rem 0.6rem;
+            padding: 0.3rem 0.7rem;
             border-radius: 30px;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             display: inline-block;
         }
 
@@ -195,184 +243,134 @@
             .container { padding: 1rem; }
             .city-grid { gap: 1.2rem; }
             .detail-title { font-size: 1.3rem; }
+            .city-banner { height: 180px; }
         }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>🏯 中国城市旅游攻略</h1>
-        <p>精选热门目的地 · 本地人推荐玩法 · 四季皆宜出发</p>
+        <p>输入城市名称搜索 · 查看景点美食攻略 · 开启你的旅程</p>
+        <div class="search-box">
+            <input type="text" class="search-input" id="searchInput" placeholder="搜索城市名称，例如：北京、厦门...">
+            <span class="search-icon">🔍</span>
+        </div>
     </div>
 
     <div class="container">
+        <div class="search-tip" id="searchTip"></div>
         <div class="city-grid" id="cityGrid"></div>
         <div id="detailPanel" class="detail-section" style="display: none;"></div>
     </div>
 
     <footer>
-        🌟 所有攻略信息来自实地整理，仅供参考 | 祝你旅途愉快
+        🌟 攻略信息整理自网络，仅供参考 | 旅途愉快，一路顺风
     </footer>
 
     <script>
-        // ---------- 城市数据库 ----------
+        // 完整城市数据库：4个一线+30个二线 共34个城市
         const citiesData = [
+            // 一线城市
             {
                 id: 1,
                 name: "北京",
+                level: "一线",
                 shortDesc: "六朝古都，古今交融",
-                image: "https://picsum.photos/id/104/400/250",  // 长城风格的随机图
+                image: "https://picsum.photos/id/104/800/400",
+                cardImg: "https://picsum.photos/id/104/400/250",
                 detail: {
-                    attractions: ["故宫博物院", "八达岭长城", "天坛", "颐和园", "南锣鼓巷"],
-                    food: ["北京烤鸭", "炸酱面", "豆汁焦圈", "涮羊肉", "驴打滚"],
+                    attractions: ["故宫博物院", "八达岭长城", "天坛公园", "颐和园", "南锣鼓巷", "景山公园", "鸟巢水立方"],
+                    food: ["北京烤鸭", "炸酱面", "豆汁焦圈", "铜锅涮羊肉", "驴打滚", "艾窝窝", "卤煮火烧"],
                     bestSeason: "春秋两季（4-5月，9-10月）",
-                    tips: "建议故宫提前7天预约；长城尽量早上去避开人流。",
-                    itinerary: "D1: 天安门+故宫+景山公园；D2: 长城+鸟巢水立方夜景；D3: 颐和园+北大清华门口打卡"
+                    tips: "故宫建议提前7天预约；长城尽量早上去避开人流；市区景点集中，公共交通非常方便。",
+                    itinerary: "D1: 天安门广场+故宫+景山公园；D2: 八达岭长城+鸟巢水立方夜景；D3: 颐和园+南锣鼓巷+什刹海"
                 }
             },
             {
                 id: 2,
                 name: "上海",
+                level: "一线",
                 shortDesc: "摩登之都，海派风情",
-                image: "https://picsum.photos/id/96/400/250",
+                image: "https://picsum.photos/id/96/800/400",
+                cardImg: "https://picsum.photos/id/96/400/250",
                 detail: {
-                    attractions: ["外滩", "迪士尼乐园", "豫园", "南京路步行街", "武康路"],
-                    food: ["小笼包", "生煎包", "本帮红烧肉", "蟹粉豆腐", "排骨年糕"],
+                    attractions: ["外滩", "上海迪士尼乐园", "豫园", "南京路步行街", "武康路", "东方明珠", "田子坊"],
+                    food: ["小笼包", "生煎包", "本帮红烧肉", "蟹粉豆腐", "排骨年糕", "腌笃鲜", "青团"],
                     bestSeason: "春秋最佳（3-5月，9-11月）",
-                    tips: "外滩夜景必看；迪士尼避开周末；武康路适合Citywalk。",
-                    itinerary: "D1: 豫园+城隍庙+南京路+外滩；D2: 迪士尼全天；D3: 新天地+田子坊"
+                    tips: "外滩夜景必看；迪士尼建议避开周末；武康路适合Citywalk，随手出片。",
+                    itinerary: "D1: 豫园+城隍庙+南京路+外滩；D2: 迪士尼乐园全天游玩；D3: 武康路+新天地+田子坊"
                 }
             },
             {
                 id: 3,
-                name: "西安",
-                shortDesc: "千年古都，梦回长安",
-                image: "https://picsum.photos/id/123/400/250",
+                name: "广州",
+                level: "一线",
+                shortDesc: "羊城古韵，食在广州",
+                image: "https://picsum.photos/id/132/800/400",
+                cardImg: "https://picsum.photos/id/132/400/250",
                 detail: {
-                    attractions: ["兵马俑", "大雁塔", "西安城墙", "回民街", "大唐不夜城"],
-                    food: ["肉夹馍", "凉皮", "羊肉泡馍", "biangbiang面", "甑糕"],
-                    bestSeason: "3-6月，9-11月",
-                    tips: "兵马俑请导游讲解更有意思；城墙上可以租自行车骑行。",
-                    itinerary: "D1: 兵马俑+华清宫；D2: 城墙+钟鼓楼+回民街；D3: 大雁塔+大唐不夜城"
+                    attractions: ["广州塔", "陈家祠", "沙面岛", "白云山", "北京路步行街", "长隆欢乐世界", "南越王博物馆"],
+                    food: ["广州早茶", "白切鸡", "烧腊", "云吞面", "艇仔粥", "双皮奶", "布拉肠"],
+                    bestSeason: "10月-次年2月（气候凉爽）",
+                    tips: "喝早茶尽量错峰；上下九步行街本地人去的多，性价比高。",
+                    itinerary: "D1: 广州塔+海心沙+珠江夜游；D2: 陈家祠+沙面+北京路；D3: 早茶+白云山+长隆"
                 }
             },
             {
                 id: 4,
-                name: "成都",
-                shortDesc: "天府之国，巴适得板",
-                image: "https://picsum.photos/id/127/400/250",
+                name: "深圳",
+                level: "一线",
+                shortDesc: "创新之都，海滨风光",
+                image: "https://picsum.photos/id/152/800/400",
+                cardImg: "https://picsum.photos/id/152/400/250",
                 detail: {
-                    attractions: ["大熊猫繁育基地", "宽窄巷子", "锦里", "都江堰", "青城山"],
-                    food: ["火锅", "串串香", "担担面", "夫妻肺片", "蛋烘糕"],
-                    bestSeason: "全年皆宜，3-6月及9-11月最佳",
-                    tips: "看熊猫尽量上午去；火锅点微辣；人民公园喝茶体验慢生活。",
-                    itinerary: "D1: 熊猫基地+宽窄巷子；D2: 都江堰+青城山；D3: 武侯祠+锦里+人民公园"
+                    attractions: ["世界之窗", "欢乐谷", "东部华侨城", "大小梅沙", "大鹏所城", "深圳湾公园", "莲花山公园"],
+                    food: ["沙井生蚝", "公明烧鹅", "肠粉", "云吞面", "客家菜", "椰子鸡", "海鲜火锅"],
+                    bestSeason: "10月-次年3月，气候舒适",
+                    tips: "海滨景点建议11月之后去，夏季注意防晒防台风。",
+                    itinerary: "D1: 深圳湾公园+世界之窗；D2: 大鹏所城+较场尾海滩；D3: 莲花山+东门老街"
                 }
             },
+            // 二线城市 共30个
             {
                 id: 5,
-                name: "桂林",
-                shortDesc: "山水甲天下",
-                image: "https://picsum.photos/id/20/400/250",
+                name: "厦门",
+                level: "二线",
+                shortDesc: "海上花园，文艺小城",
+                image: "https://picsum.photos/id/100/800/400",
+                cardImg: "https://picsum.photos/id/100/400/250",
                 detail: {
-                    attractions: ["漓江", "阳朔西街", "遇龙河", "龙脊梯田", "象鼻山"],
-                    food: ["桂林米粉", "啤酒鱼", "田螺酿", "荔浦扣肉", "马蹄糕"],
-                    bestSeason: "4-10月（雨季山水更美）",
-                    tips: "漓江精华段（杨堤-兴坪）；遇龙河竹筏比漓江更宁静。",
-                    itinerary: "D1: 桂林市区+象鼻山+两江四湖；D2: 漓江+阳朔西街；D3: 遇龙河+银子岩"
+                    attractions: ["鼓浪屿", "南普陀寺", "厦门大学", "曾厝垵", "沙坡尾", "环岛路", "集美学村"],
+                    food: ["沙茶面", "土笋冻", "海蛎煎", "姜母鸭", "同安封肉", "麻糍", "烧肉粽"],
+                    bestSeason: "春秋最佳（3-5月，10-11月）",
+                    tips: "鼓浪屿船票需要提前预约；节假日避开曾厝垵，沙坡尾更安静小众。",
+                    itinerary: "D1: 鼓浪屿环岛一日游；D2: 南普陀+厦大+环岛路骑行；D3: 集美学村+沙坡尾"
                 }
             },
             {
                 id: 6,
-                name: "长沙",
-                shortDesc: "星城热辣，不夜之城",
-                image: "https://picsum.photos/id/169/400/250",
+                name: "福州",
+                level: "二线",
+                shortDesc: "三坊七巷，有福之州",
+                image: "https://picsum.photos/id/110/800/400",
+                cardImg: "https://picsum.photos/id/110/400/250",
                 detail: {
-                    attractions: ["岳麓山", "橘子洲头", "湖南省博物馆", "太平老街", "IFS国金中心"],
-                    food: ["臭豆腐", "口味虾", "糖油粑粑", "剁椒鱼头", "米粉"],
-                    bestSeason: "春秋最佳，夏季较热但夜生活丰富",
-                    tips: "省博看辛追夫人需提前预约；橘子洲建议坐小火车。",
-                    itinerary: "D1: 岳麓山+岳麓书院+大学城美食；D2: 橘子洲+省博+四方坪夜市；D3: 文和友+坡子街+解放西"
+                    attractions: ["三坊七巷", "鼓山", "上下杭", "烟台山", "西湖公园", "平潭岛", "云顶景区"],
+                    food: ["鱼丸", "肉燕", "佛跳墙", "锅边糊", "海蛎饼", "线面", "荔枝肉"],
+                    bestSeason: "4-6月，9-11月气候温和",
+                    tips: "平潭岛适合自驾，看蓝眼泪要提前查好时间。",
+                    itinerary: "D1: 三坊七巷+上下杭+烟台山；D2: 鼓山+西湖公园；D3: 平潭岛一日游"
                 }
-            }
-        ];
-        // 渲染城市卡片
-        const cityGrid = document.getElementById('cityGrid');
-        const detailPanel = document.getElementById('detailPanel');
-
-        function buildCards() {
-            cityGrid.innerHTML = '';
-            citiesData.forEach(city => {
-                const card = document.createElement('div');
-                card.className = 'city-card';
-                card.innerHTML = `
-                    <img class="card-img" src="${city.image}" alt="${city.name}" loading="lazy">
-                    <div class="card-content">
-                        <div class="city-name">
-                            ${city.name}
-                            <span>${city.shortDesc}</span>
-                        </div>
-                        <div class="city-desc">${city.shortDesc} · 等你来探索</div>
-                        <button class="btn-guide" data-id="${city.id}">📖 查看攻略</button>
-                    </div>
-                `;
-                cityGrid.appendChild(card);
-            });
-
-            // 绑定按钮事件 (委托)
-            cityGrid.addEventListener('click', (e) => {
-                const btn = e.target.closest('.btn-guide');
-                if (btn) {
-                    const id = parseInt(btn.getAttribute('data-id'));
-                    showCityDetail(id);
-                }
-            });
-        }
-
-        // 展示详细攻略
-        function showCityDetail(cityId) {
-            const city = citiesData.find(c => c.id === cityId);
-            if (!city) return;
-
-            const d = city.detail;
-            detailPanel.style.display = 'block';
-            detailPanel.innerHTML = `
-                <div class="detail-title">🗺️ ${city.name} · 保姆级攻略</div>
-                <div class="detail-grid">
-                    <div class="info-card">
-                        <h3>🌟 必游景点</h3>
-                        <ul>
-                            ${d.attractions.map(place => `<li>${place}</li>`).join('')}
-                        </ul>
-                    </div>
-                    <div class="info-card">
-                        <h3>🍜 地道美食</h3>
-                        <ul>
-                            ${d.food.map(f => `<li>${f}</li>`).join('')}
-                        </ul>
-                    </div>
-                    <div class="info-card">
-                        <h3>📅 最佳季节</h3>
-                        <p><span class="badge-season">${d.bestSeason}</span></p>
-                        <h3 style="margin-top: 12px;">💡 实用贴士</h3>
-                        <p>${d.tips}</p>
-                    </div>
-                    <div class="info-card">
-                        <h3>🚶 经典三日游</h3>
-                        <p>${d.itinerary}</p>
-                    </div>
-                </div>
-                <div style="margin-top: 16px; text-align: right; font-size: 0.8rem; color: #94a3b8;">
-                    ⚡ 点击其他城市按钮可查看不同攻略
-                </div>
-            `;
-            // 滚动到详情区域，提升体验
-            detailPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-
-        // 初始化默认显示第一个城市的攻略（可选）
-        buildCards();
-        // 默认展示北京攻略，让页面刚加载时有内容
-        showCityDetail(1);
-    </script>
-</body>
-</html>
+            },
+            {
+                id: 7,
+                name: "无锡",
+                level: "二线",
+                shortDesc: "太湖明珠，江南胜地",
+                image: "https://picsum.photos/id/112/800/400",
+                cardImg: "https://picsum.photos/id/112/400/250",
+                detail: {
+                    attractions: ["鼋头渚", "灵山大佛", "三国城水浒城", "惠山古镇", "南长街", "寄畅园", "拈花湾"],
+                    food: ["无锡酱排骨", "清水油面筋", "三凤桥酱鸭", "小笼包", "惠山油酥", "太湖三白", "马蹄酥"],
+                    bestSeason: "3-5月（樱花季），9-10月",
+                    tips: "
